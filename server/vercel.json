@@ -2,20 +2,25 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/server.js",
+      "src": "server/src/server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "server/src/server.js"
+    },
+    {
       "src": "/(.*)",
-      "dest": "src/server.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ntoa.vercel.app",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-        "Access-Control-Allow-Credentials": "true"
-      }
+      "dest": "/dist/$1"
     }
   ],
   "env": {

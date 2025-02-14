@@ -1,14 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', {
-    url: !!supabaseUrl,
-    key: !!supabaseAnonKey
-  });
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const STORAGE_BUCKET = 'notes';
 
@@ -36,7 +29,6 @@ export const initializeStorage = async () => {
       if (error) throw error;
     }
   } catch (error) {
-    console.error('Storage initialization error:', error);
     throw new Error('Failed to initialize storage');
   }
 }; 

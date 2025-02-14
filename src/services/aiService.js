@@ -11,9 +11,11 @@ export const processFiles = async (fileUrls) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({ files: fileUrls }),
-      mode: 'cors'
+      mode: 'cors',
+      credentials: 'include'
     });
 
     console.log('Response details:', {
@@ -66,6 +68,7 @@ export const askQuestion = async (question, internetSearch = false) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         question,
@@ -73,7 +76,8 @@ export const askQuestion = async (question, internetSearch = false) => {
         useOnlyUploadedDocs: !internetSearch,
         chatHistory: []
       }),
-      mode: 'cors'
+      mode: 'cors',
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -97,7 +101,8 @@ export const askQuestion = async (question, internetSearch = false) => {
 export const getFileContent = async (fileUrl) => {
   try {
     const response = await fetch(fileUrl, {
-      mode: 'cors'
+      mode: 'cors',
+      credentials: 'include'
     });
     if (!response.ok) {
       throw new Error('Failed to fetch file content');
