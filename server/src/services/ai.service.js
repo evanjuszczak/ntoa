@@ -26,8 +26,27 @@ const textSplitter = new RecursiveCharacterTextSplitter({
 
 // Create temp directory if it doesn't exist
 const tempDir = process.env.NODE_ENV === 'production' ? '/tmp' : path.join(__dirname, '../../temp');
+console.log('Using temp directory:', tempDir);
+
 if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
+  try {
+    fs.mkdirSync(tempDir, { recursive: true });
+    console.log('Created temp directory:', tempDir);
+  } catch (error) {
+    console.error('Error creating temp directory:', error);
+    throw new Error(`Failed to create temp directory: ${error.message}`);
+  }
+}
+
+// Verify temp directory is writable
+try {
+  const testFile = path.join(tempDir, 'test.txt');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+  console.log('Temp directory is writable');
+} catch (error) {
+  console.error('Temp directory is not writable:', error);
+  throw new Error(`Temp directory is not writable: ${error.message}`);
 }
 
 const getFileLoader = (filePath, fileType) => {
@@ -109,7 +128,13 @@ export const processDocument = async (fileUrl, fileName) => {
   let tempFilePath = null;
   
   try {
-    console.log('Starting document processing:', { fileUrl, fileName, tempDir });
+    console.log('Starting document processing:', { 
+      fileUrl, 
+      fileName, 
+      tempDir,
+      env: process.env.NODE_ENV,
+      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY
+    });
     
     // Clean up existing documents before processing new ones
     await deleteAllDocuments();
@@ -133,20 +158,45 @@ export const processDocument = async (fileUrl, fileName) => {
       throw new Error(`Failed to fetch file: ${response.statusText}`);
     }
     
-    // Save to temp file
+    // Save to temp file with error handling
     tempFilePath = path.join(tempDir, `temp_${Date.now()}_${cleanFileName}`);
     console.log('Saving to temp path:', tempFilePath);
     const buffer = await response.buffer();
-    fs.writeFileSync(tempFilePath, buffer);
+    
+    try {
+      fs.writeFileSync(tempFilePath, buffer);
+      console.log('File saved successfully');
+    } catch (error) {
+      console.error('Error saving file:', error);
+      throw new Error(`Failed to save temp file: ${error.message}`);
+    }
+
+    // Verify file exists and is readable
+    try {
+      const stats = fs.statSync(tempFilePath);
+      console.log('File stats:', {
+        size: stats.size,
+        path: tempFilePath,
+        exists: fs.existsSync(tempFilePath)
+      });
+    } catch (error) {
+      console.error('Error checking file:', error);
+      throw new Error(`Failed to verify temp file: ${error.message}`);
+    }
 
     // Get loader and load content
     console.log('Loading document content...');
     const loader = getFileLoader(tempFilePath, fileType);
     const docs = await loader.load();
     
-    if (docs.length === 0) {
+    if (!docs || docs.length === 0) {
       throw new Error('No content could be extracted from the document');
     }
+
+    console.log('Document loaded successfully:', {
+      chunks: docs.length,
+      firstChunkLength: docs[0].pageContent.length
+    });
 
     // Split into smaller chunks and process in batches
     console.log('Splitting document into chunks...');
@@ -183,7 +233,9 @@ export const processDocument = async (fileUrl, fileName) => {
       stack: error.stack,
       fileUrl,
       fileName,
-      tempFilePath
+      tempFilePath,
+      env: process.env.NODE_ENV,
+      tempDir
     });
     throw error;
   } finally {
