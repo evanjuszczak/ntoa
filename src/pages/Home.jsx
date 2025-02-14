@@ -12,7 +12,7 @@ const Home = () => {
       {/* Hero Section */}
       <Box sx={{ textAlign: 'center', my: 8 }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Note-AI
+          N2A AI Assistant
         </Typography>
         <Typography variant="h5" color="text.secondary" paragraph>
           Upload your notes and get AI-powered insights and answers

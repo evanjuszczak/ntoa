@@ -1,23 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Container } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeContextProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import Dashboard from './pages/Dashboard';
+import TestUpload from './pages/TestUpload';
+import ForgotPassword from './components/ForgotPassword';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -34,8 +24,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeContextProvider>
       <AuthProvider>
         <Router>
           <Navbar />
@@ -43,19 +32,13 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route
-                path="/dashboard"
+                path="/test-upload"
                 element={
                   <ProtectedRoute>
-                    <div>Dashboard</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/notes"
-                element={
-                  <ProtectedRoute>
-                    <div>Notes</div>
+                    <TestUpload />
                   </ProtectedRoute>
                 }
               />
@@ -64,7 +47,7 @@ function App() {
           </Container>
         </Router>
       </AuthProvider>
-    </ThemeProvider>
+    </ThemeContextProvider>
   );
 }
 

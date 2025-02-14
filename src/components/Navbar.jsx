@@ -24,16 +24,13 @@ const Navbar = () => {
           sx={{ flexGrow: 1, cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          Note-AI
+          N2A AI Assistant
         </Typography>
         <Box>
           {user ? (
             <>
               <Button color="inherit" onClick={() => navigate('/dashboard')}>
                 Dashboard
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/notes')}>
-                My Notes
               </Button>
               <Button color="inherit" onClick={handleLogout}>
                 Logout
