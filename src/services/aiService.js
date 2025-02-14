@@ -1,11 +1,8 @@
 import { supabase } from '../config/supabaseClient';
 
-const AI_ENDPOINT = import.meta.env.VITE_AI_API_ENDPOINT || 'http://localhost:3000/api';
-
 export const processFiles = async (fileUrls) => {
   try {
     console.log('Processing files:', fileUrls);
-    console.log('Using API endpoint:', AI_ENDPOINT);
     
     // Get the current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -15,24 +12,20 @@ export const processFiles = async (fileUrls) => {
       throw new Error('No authentication token available');
     }
     
-    const response = await fetch(`${AI_ENDPOINT}/process`, {
+    const response = await fetch('/api/process', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ files: fileUrls }),
-      credentials: 'include',
-      mode: 'cors'
+      body: JSON.stringify({ files: fileUrls })
     });
 
     console.log('Response details:', {
       status: response.status,
       statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      url: response.url,
-      origin: window.location.origin
+      headers: Object.fromEntries(response.headers.entries())
     });
 
     if (!response.ok) {
@@ -55,12 +48,7 @@ export const processFiles = async (fileUrls) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error processing files:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      endpoint: AI_ENDPOINT
-    });
+    console.error('Error processing files:', error);
     throw error;
   }
 };
@@ -75,13 +63,7 @@ export const askQuestion = async (question, internetSearch = false) => {
       throw new Error('No authentication token available');
     }
 
-    console.log('Asking question with settings:', {
-      question,
-      internetSearch,
-      endpoint: `${AI_ENDPOINT}/ask`
-    });
-
-    const response = await fetch(`${AI_ENDPOINT}/ask`, {
+    const response = await fetch('/api/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -93,9 +75,7 @@ export const askQuestion = async (question, internetSearch = false) => {
         internetSearch,
         useOnlyUploadedDocs: !internetSearch,
         chatHistory: []
-      }),
-      credentials: 'include',
-      mode: 'cors'
+      })
     });
 
     if (!response.ok) {
@@ -129,9 +109,7 @@ export const getFileContent = async (fileUrl) => {
     const response = await fetch(fileUrl, {
       headers: {
         'Authorization': `Bearer ${session.access_token}`
-      },
-      credentials: 'include',
-      mode: 'cors'
+      }
     });
     
     if (!response.ok) {
