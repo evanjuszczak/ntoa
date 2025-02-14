@@ -7,6 +7,11 @@ const router = express.Router();
 // Middleware to verify authentication
 const verifyAuth = async (req, res, next) => {
   try {
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({
@@ -19,6 +24,7 @@ const verifyAuth = async (req, res, next) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.error('Auth error:', error);
       return res.status(401).json({
         error: 'Unauthorized',
         message: error?.message || 'Invalid token'
@@ -36,8 +42,11 @@ const verifyAuth = async (req, res, next) => {
   }
 };
 
+// Apply authentication middleware to all routes
+router.use(verifyAuth);
+
 // Process uploaded files
-router.post('/process', verifyAuth, async (req, res, next) => {
+router.post('/process', async (req, res, next) => {
   try {
     const { files } = req.body;
     if (!files || !Array.isArray(files) || files.length === 0) {
@@ -60,6 +69,7 @@ router.post('/process', verifyAuth, async (req, res, next) => {
       results
     });
   } catch (error) {
+    console.error('Process error:', error);
     next(error);
   }
 });
@@ -78,6 +88,7 @@ router.post('/ask', async (req, res, next) => {
     const response = await handleQuestion(question, chatHistory);
     res.json(response);
   } catch (error) {
+    console.error('Ask error:', error);
     next(error);
   }
 });

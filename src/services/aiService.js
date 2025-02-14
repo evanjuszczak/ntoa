@@ -23,7 +23,8 @@ export const processFiles = async (fileUrls) => {
         'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({ files: fileUrls }),
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
 
     console.log('Response details:', {
@@ -66,6 +67,14 @@ export const processFiles = async (fileUrls) => {
 
 export const askQuestion = async (question, internetSearch = false) => {
   try {
+    // Get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
+    }
+
     console.log('Asking question with settings:', {
       question,
       internetSearch,
@@ -77,6 +86,7 @@ export const askQuestion = async (question, internetSearch = false) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({
         question,
@@ -84,8 +94,8 @@ export const askQuestion = async (question, internetSearch = false) => {
         useOnlyUploadedDocs: !internetSearch,
         chatHistory: []
       }),
-      mode: 'cors',
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
 
     if (!response.ok) {
@@ -108,10 +118,22 @@ export const askQuestion = async (question, internetSearch = false) => {
 
 export const getFileContent = async (fileUrl) => {
   try {
+    // Get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
+    }
+
     const response = await fetch(fileUrl, {
-      mode: 'cors',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      credentials: 'include',
+      mode: 'cors'
     });
+    
     if (!response.ok) {
       throw new Error('Failed to fetch file content');
     }
