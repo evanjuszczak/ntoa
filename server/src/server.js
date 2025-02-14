@@ -17,6 +17,20 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Initialize vector store
+let vectorStoreInitialized = false;
+
+const initVectorStore = async () => {
+  try {
+    await setupVectorStore();
+    vectorStoreInitialized = true;
+    console.log('Vector store initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize vector store:', error);
+    throw error;
+  }
+};
+
 // CORS configuration
 const corsOptions = {
   origin: 'https://ntoa.vercel.app',
@@ -70,17 +84,44 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    vectorStore: vectorStoreInitialized ? 'initialized' : 'not initialized'
+  });
+});
+
+// Check vector store initialization before processing requests
+app.use('/api/*', async (req, res, next) => {
+  if (!vectorStoreInitialized) {
+    try {
+      await initVectorStore();
+      next();
+    } catch (error) {
+      res.status(500).json({
+        error: 'Server Configuration Error',
+        message: 'Failed to initialize vector store'
+      });
+    }
+  } else {
+    next();
+  }
+});
+
 // Routes
 app.use('/api', aiRoutes);
 
 // Error handling
 app.use(errorHandler);
 
-// Initialize vector store
-setupVectorStore().catch(console.error);
-
 // Start server
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server running on port ${port}`);
   console.log('Allowed origins:', corsOptions.origin);
+  try {
+    await initVectorStore();
+  } catch (error) {
+    console.error('Server started but vector store initialization failed:', error);
+  }
 }); 
