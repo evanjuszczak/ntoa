@@ -37,11 +37,15 @@ const Login = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { mode, toggleColorMode } = useThemeContext();
 
+  // Log auth state for debugging
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+    console.log('Login component auth state:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      loading,
+      error
+    });
+  }, [user, loading, error]);
 
   const validateEmail = (email) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -88,12 +92,22 @@ const Login = () => {
     if (!validateForm()) return;
 
     setLoading(true);
+    console.log('Attempting authentication:', {
+      isLogin: tab === 0,
+      email
+    });
 
     try {
       const result = tab === 0 
         ? await login(email, password)
         : await signup(email, password, signupCode);
       
+      console.log('Authentication result:', {
+        success: !!result.user,
+        hasError: !!result.error,
+        errorMessage: result.error?.message
+      });
+
       if (result.error) {
         setError(result.error.message);
         setLoading(false);
@@ -106,6 +120,7 @@ const Login = () => {
         return;
       }
     } catch (err) {
+      console.error('Authentication error:', err);
       setError(err.message || 'An unexpected error occurred');
       setLoading(false);
     }
