@@ -25,8 +25,8 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <ThemeContextProvider>
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <Navbar />
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Routes>
@@ -45,8 +45,8 @@ function App() {
               <Route path="*" element={<div>404 Not Found</div>} />
             </Routes>
           </Container>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </ThemeContextProvider>
   );
 }
