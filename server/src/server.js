@@ -32,8 +32,10 @@ const initVectorStore = async () => {
 };
 
 // CORS configuration
+const PRODUCTION_URL = 'https://ntoa.vercel.app';
+
 const corsOptions = {
-  origin: 'https://ntoa.vercel.app',
+  origin: PRODUCTION_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true,
@@ -62,8 +64,7 @@ app.options('*', (req, res) => {
     headers: req.headers
   });
   
-  // Set CORS headers explicitly
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Origin', PRODUCTION_URL);
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -73,11 +74,8 @@ app.options('*', (req, res) => {
 
 // Additional security headers
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
+  res.header('Access-Control-Allow-Origin', PRODUCTION_URL);
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
@@ -118,7 +116,7 @@ app.use(errorHandler);
 // Start server
 app.listen(port, async () => {
   console.log(`Server running on port ${port}`);
-  console.log('Allowed origins:', corsOptions.origin);
+  console.log('Production URL:', PRODUCTION_URL);
   try {
     await initVectorStore();
   } catch (error) {
