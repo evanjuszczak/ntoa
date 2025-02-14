@@ -21,23 +21,41 @@ const verifyAuth = async (req, res, next) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    try {
+      // Verify the JWT token with Supabase
+      const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (error || !user) {
-      console.error('Auth error:', error);
+      if (error) {
+        console.error('Token verification error:', error);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Invalid token'
+        });
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User not found'
+        });
+      }
+
+      // Add user data to request
+      req.user = user;
+      next();
+    } catch (verifyError) {
+      console.error('Token verification error:', verifyError);
       return res.status(401).json({
         error: 'Unauthorized',
-        message: error?.message || 'Invalid token'
+        message: 'Invalid token format'
       });
     }
-
-    req.user = user;
-    next();
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Authentication failed'
+    console.error('Auth middleware error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Authentication check failed'
     });
   }
 };
