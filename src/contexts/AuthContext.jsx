@@ -24,11 +24,7 @@ export function AuthProvider({ children }) {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
-        
         setUser(session?.user ?? null);
-        if (session?.user) {
-          navigate('/dashboard');
-        }
       } catch (err) {
         console.error('Session check error:', err);
         setError(err.message);
@@ -81,7 +77,6 @@ export function AuthProvider({ children }) {
         throw new Error('Signup failed. Please try again.');
       }
 
-      navigate('/dashboard');
       return { user: data.user, error: null };
     } catch (error) {
       console.error('Signup error:', error);
@@ -114,7 +109,6 @@ export function AuthProvider({ children }) {
         throw new Error('Login failed. Please try again.');
       }
 
-      navigate('/dashboard');
       return { user: data.user, error: null };
     } catch (error) {
       console.error('Login error:', error);
@@ -134,8 +128,6 @@ export function AuthProvider({ children }) {
       setLoading(true);
       const { error: logoutError } = await supabase.auth.signOut();
       if (logoutError) throw logoutError;
-      
-      navigate('/login');
       return { error: null };
     } catch (error) {
       console.error('Logout error:', error);
