@@ -7,14 +7,22 @@ export const processFiles = async (fileUrls) => {
     console.log('Processing files:', fileUrls);
     console.log('Using API endpoint:', AI_ENDPOINT);
     
+    // Get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
+    }
+    
     const response = await fetch(`${AI_ENDPOINT}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({ files: fileUrls }),
-      mode: 'cors',
       credentials: 'include'
     });
 
