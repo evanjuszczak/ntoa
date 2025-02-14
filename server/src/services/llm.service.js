@@ -1,32 +1,47 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const configuration = new Configuration({
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY is required');
+}
+
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const openai = new OpenAIApi(configuration);
 
 export class LLMService {
   async embeddings(text) {
     try {
-      const response = await openai.createEmbedding({
+      console.log('Generating embeddings for text length:', text.length);
+      
+      const response = await openai.embeddings.create({
         model: "text-embedding-ada-002",
         input: text,
       });
 
-      return response.data.data[0].embedding;
+      if (!response.data?.[0]?.embedding) {
+        throw new Error('Invalid response from OpenAI embeddings API');
+      }
+
+      return response.data[0].embedding;
     } catch (error) {
-      console.error('Error generating embeddings:', error);
+      console.error('Error generating embeddings:', {
+        error: error.message,
+        status: error.status,
+        type: error.type,
+        code: error.code
+      });
       throw error;
     }
   }
 
   async chat(messages) {
     try {
-      const response = await openai.createChatCompletion({
+      console.log('Sending chat request with messages:', messages.length);
+      
+      const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: messages.map(msg => ({
           role: msg.role,
@@ -38,11 +53,20 @@ export class LLMService {
         frequency_penalty: 0,
       });
 
+      if (!response.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response from OpenAI chat API');
+      }
+
       return {
-        content: response.data.choices[0].message.content
+        content: response.choices[0].message.content
       };
     } catch (error) {
-      console.error('Error in chat:', error);
+      console.error('Error in chat:', {
+        error: error.message,
+        status: error.status,
+        type: error.type,
+        code: error.code
+      });
       throw error;
     }
   }
