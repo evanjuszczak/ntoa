@@ -19,7 +19,9 @@ const port = process.env.PORT || 3000;
 
 // CORS configuration
 const corsOptions = {
-  origin: 'https://ntoa.vercel.app',
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://ntoa.vercel.app', 'https://note-ai-evanjuszczak.vercel.app']
+    : 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true,
@@ -48,11 +50,17 @@ app.options('*', (req, res) => {
     headers: req.headers
   });
   
-  // Set CORS headers explicitly
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://ntoa.vercel.app', 'https://note-ai-evanjuszczak.vercel.app']
+    : ['http://localhost:5173'];
+    
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
   
   res.status(204).end();
 });
