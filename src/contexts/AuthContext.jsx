@@ -19,6 +19,8 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     // Check for initial session
     const checkSession = async () => {
       try {
@@ -26,27 +28,44 @@ export function AuthProvider({ children }) {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session check error:', sessionError);
+          console.error('Session check error:', {
+            error: sessionError,
+            message: sessionError.message,
+            details: sessionError.details,
+            status: sessionError.status
+          });
           throw sessionError;
         }
         
         console.log('Session check result:', {
           hasSession: !!session,
-          userEmail: session?.user?.email
+          userEmail: session?.user?.email,
+          sessionExpiry: session?.expires_at,
+          accessToken: session?.access_token ? 'present' : 'missing'
         });
         
-        setUser(session?.user ?? null);
-        
-        // If we have a session, navigate to dashboard
-        if (session?.user) {
-          console.log('Found existing session, navigating to dashboard');
-          navigate('/dashboard');
+        if (mounted) {
+          setUser(session?.user ?? null);
+          
+          // If we have a session, navigate to dashboard
+          if (session?.user) {
+            console.log('Found existing session, navigating to dashboard');
+            navigate('/dashboard');
+          }
         }
       } catch (err) {
-        console.error('Session check error:', err);
-        setError(err.message);
+        console.error('Session check error:', {
+          error: err,
+          message: err.message,
+          stack: err.stack
+        });
+        if (mounted) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -57,22 +76,27 @@ export function AuthProvider({ children }) {
       console.log('Auth state changed:', {
         event,
         userEmail: session?.user?.email,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sessionExpiry: session?.expires_at,
+        accessToken: session?.access_token ? 'present' : 'missing'
       });
       
-      setUser(session?.user ?? null);
-      
-      if (event === 'SIGNED_IN') {
-        console.log('User signed in, navigating to dashboard');
-        navigate('/dashboard');
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out, navigating to login');
-        navigate('/login');
+      if (mounted) {
+        setUser(session?.user ?? null);
+        
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in, navigating to dashboard');
+          navigate('/dashboard');
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out, navigating to login');
+          navigate('/login');
+        }
       }
     });
 
     return () => {
       console.log('Cleaning up auth subscriptions');
+      mounted = false;
       subscription?.unsubscribe();
     };
   }, [navigate]);
@@ -95,10 +119,21 @@ export function AuthProvider({ children }) {
       setLoading(true);
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
 
-      if (signupError) throw signupError;
+      if (signupError) {
+        console.error('Signup error:', {
+          error: signupError,
+          message: signupError.message,
+          details: signupError.details,
+          status: signupError.status
+        });
+        throw signupError;
+      }
 
       if (!data?.user) {
         throw new Error('Signup failed. Please try again.');
@@ -106,12 +141,17 @@ export function AuthProvider({ children }) {
 
       console.log('Signup successful:', {
         userEmail: data.user.email,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        userId: data.user.id
       });
 
       return { user: data.user, error: null };
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Signup error:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
       setError(error.message);
       return { 
         user: null, 
@@ -137,7 +177,15 @@ export function AuthProvider({ children }) {
         password
       });
 
-      if (loginError) throw loginError;
+      if (loginError) {
+        console.error('Login error:', {
+          error: loginError,
+          message: loginError.message,
+          details: loginError.details,
+          status: loginError.status
+        });
+        throw loginError;
+      }
 
       if (!data?.user) {
         throw new Error('Login failed. Please try again.');
@@ -145,12 +193,18 @@ export function AuthProvider({ children }) {
 
       console.log('Login successful:', {
         userEmail: data.user.email,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        userId: data.user.id,
+        sessionExpiry: data.session?.expires_at
       });
 
       return { user: data.user, error: null };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
       setError(error.message);
       return { 
         user: null, 
@@ -168,12 +222,24 @@ export function AuthProvider({ children }) {
       setLoading(true);
       
       const { error: logoutError } = await supabase.auth.signOut();
-      if (logoutError) throw logoutError;
+      if (logoutError) {
+        console.error('Logout error:', {
+          error: logoutError,
+          message: logoutError.message,
+          details: logoutError.details,
+          status: logoutError.status
+        });
+        throw logoutError;
+      }
       
       console.log('Logout successful');
       return { error: null };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout error:', {
+        error: error,
+        message: error.message,
+        stack: error.stack
+      });
       setError(error.message);
       return { error };
     } finally {

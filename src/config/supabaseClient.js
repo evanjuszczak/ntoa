@@ -9,7 +9,9 @@ console.log('Supabase Configuration:', {
   hasKey: !!supabaseAnonKey,
   keyLength: supabaseAnonKey?.length,
   env: import.meta.env.MODE,
-  envVars: Object.keys(import.meta.env).filter(key => key.includes('SUPABASE'))
+  envVars: Object.keys(import.meta.env).filter(key => key.includes('SUPABASE')),
+  fullUrl: supabaseUrl,
+  keyPrefix: supabaseAnonKey?.substring(0, 10) + '...'
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -24,62 +26,63 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Validate URL format
 if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
-  console.error('Invalid Supabase URL format:', supabaseUrl);
+  console.error('Invalid Supabase URL format:', {
+    url: supabaseUrl,
+    isHttps: supabaseUrl.startsWith('https://'),
+    hasSupabaseDomain: supabaseUrl.includes('.supabase.co')
+  });
   throw new Error('Invalid Supabase URL format');
 }
 
 // Validate anon key format
 if (!supabaseAnonKey.includes('.') || supabaseAnonKey.split('.').length !== 3) {
-  console.error('Invalid Supabase anon key format');
+  console.error('Invalid Supabase anon key format:', {
+    hasDelimiter: supabaseAnonKey.includes('.'),
+    parts: supabaseAnonKey.split('.').length,
+    keyStart: supabaseAnonKey.substring(0, 10) + '...'
+  });
   throw new Error('Invalid Supabase anon key format');
 }
 
 export const STORAGE_BUCKET = 'notes';
 
-// Create Supabase client with retries
-const createClientWithRetry = (retries = 3) => {
-  let attempt = 0;
-  const client = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-      storage: window.localStorage,
-      storageKey: 'supabase.auth.token',
-      debug: true
+// Create Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    storage: window.localStorage,
+    storageKey: 'supabase.auth.token',
+    debug: true
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'supabase-js-web'
     }
+  }
+});
+
+// Test the client connection
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state change:', {
+    event,
+    hasSession: !!session,
+    userEmail: session?.user?.email,
+    timestamp: new Date().toISOString()
   });
-
-  // Test the client
-  const testClient = async () => {
-    try {
-      const { error } = await client.auth.getSession();
-      if (error) throw error;
-      console.log('Supabase client initialized successfully');
-      return client;
-    } catch (error) {
-      console.error(`Supabase client test failed (attempt ${attempt + 1}):`, error);
-      if (attempt < retries) {
-        attempt++;
-        console.log(`Retrying Supabase client initialization (${attempt}/${retries})...`);
-        return testClient();
-      }
-      throw error;
-    }
-  };
-
-  return testClient();
-};
-
-// Initialize client
-export const supabase = await createClientWithRetry();
+});
 
 // Initialize storage bucket if it doesn't exist
 export const initializeStorage = async () => {
   try {
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     if (bucketsError) {
-      console.error('Error listing buckets:', bucketsError);
+      console.error('Error listing buckets:', {
+        error: bucketsError,
+        message: bucketsError.message,
+        details: bucketsError.details
+      });
       throw bucketsError;
     }
 
@@ -93,7 +96,11 @@ export const initializeStorage = async () => {
       });
       
       if (error) {
-        console.error('Error creating bucket:', error);
+        console.error('Error creating bucket:', {
+          error: error,
+          message: error.message,
+          details: error.details
+        });
         throw error;
       }
       
@@ -102,7 +109,11 @@ export const initializeStorage = async () => {
       console.log('Storage bucket already exists');
     }
   } catch (error) {
-    console.error('Storage initialization error:', error);
+    console.error('Storage initialization error:', {
+      error: error,
+      message: error.message,
+      stack: error.stack
+    });
     throw new Error('Failed to initialize storage: ' + error.message);
   }
 }; 
