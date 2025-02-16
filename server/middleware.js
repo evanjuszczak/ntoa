@@ -19,13 +19,11 @@ export default function middleware(request) {
     })
   }
 
-  // Handle actual requests
-  const response = Response.next()
-  
-  // Add CORS headers to all responses
-  response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept')
-  
-  return response
+  // For health check endpoint, bypass authentication
+  if (request.url.endsWith('/health')) {
+    return Response.next()
+  }
+
+  // For all other requests, continue to the next middleware/route handler
+  return Response.next()
 } 
