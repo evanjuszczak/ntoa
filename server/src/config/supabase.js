@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
     hasKey: !!supabaseServiceKey,
     env: process.env.NODE_ENV
   });
-  throw new Error('Supabase configuration is required. Please check your environment variables.');
+  throw new Error('Supabase configuration is required');
 }
 
 // Validate URL format
@@ -31,32 +31,52 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     autoRefreshToken: false,
     persistSession: false,
     detectSessionInUrl: false
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'server'
-    }
   }
 });
 
-// Test the connection
+// Test the connection and verify service role
 const testConnection = async () => {
   try {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
+    // First test basic connection
+    const { data: testData, error: testError } = await supabase
+      .from('documents')
+      .select('count(*)')
+      .limit(1)
+      .single();
+
+    if (testError && testError.code !== '42P01') { // Ignore table not found error
       console.error('Supabase connection test failed:', {
-        error: error,
-        message: error.message,
-        status: error.status,
-        details: error.details
+        error: testError.message,
+        code: testError.code,
+        hint: testError.hint
       });
-      throw error;
+      throw testError;
     }
-    console.log('Supabase connection test successful');
+
+    // Test auth with service role
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Service role authentication failed:', {
+        error: authError.message,
+        code: authError.code,
+        status: authError.status
+      });
+      throw authError;
+    }
+
+    console.log('Supabase connection and auth test successful:', {
+      serviceRole: true,
+      url: supabaseUrl ? 'configured' : 'missing',
+      key: supabaseServiceKey ? 'configured' : 'missing'
+    });
+
+    return true;
   } catch (error) {
     console.error('Failed to test Supabase connection:', {
-      error: error,
-      message: error.message,
+      error: error.message,
+      name: error.name,
+      code: error.code,
       stack: error.stack
     });
     throw error;
@@ -65,5 +85,9 @@ const testConnection = async () => {
 
 // Run the connection test
 testConnection().catch(error => {
-  console.error('Initial Supabase connection test failed:', error);
+  console.error('Initial Supabase connection test failed:', {
+    message: error.message,
+    code: error.code,
+    hint: error.hint
+  });
 }); 

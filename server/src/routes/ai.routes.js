@@ -13,104 +13,42 @@ const verifyAuth = async (req, res, next) => {
       return res.status(200).end();
     }
 
-    const authHeader = req.headers.authorization;
-    console.log('Auth request:', {
-      path: req.path,
-      method: req.method,
-      origin: req.headers.origin,
-      hasAuth: !!authHeader,
-      headers: req.headers
-    });
+    // Skip auth in development
+    if (process.env.NODE_ENV === 'development') {
+      req.user = { id: 'dev-user', email: 'dev@example.com' };
+      return next();
+    }
 
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('Invalid auth header:', {
-        header: authHeader,
-        type: typeof authHeader
-      });
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid or missing authorization header',
-        hint: 'Ensure Bearer token is provided'
+        message: 'Invalid or missing authorization header'
       });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('Token received:', {
-      length: token.length,
-      prefix: token.substring(0, 20) + '...'
-    });
-
-    // Create a fresh Supabase client for each request
-    const auth = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      }
-    );
-
+    
     try {
-      const { data: { user }, error } = await auth.auth.getUser(token);
+      const { data: { user }, error } = await supabase.auth.getUser(token);
 
-      if (error) {
-        console.error('Auth error:', {
-          message: error.message,
-          status: error.status,
-          name: error.name,
-          stack: error.stack
-        });
+      if (error || !user) {
         return res.status(401).json({
           error: 'Unauthorized',
-          message: error.message,
-          hint: 'Token validation failed'
+          message: error?.message || 'Invalid token'
         });
       }
 
-      if (!user) {
-        console.error('No user found for token');
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'User not found',
-          hint: 'Token may be invalid or expired'
-        });
-      }
-
-      console.log('Auth successful:', {
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      });
-
-      // Store user info in request
       req.user = user;
       next();
     } catch (error) {
-      console.error('Auth verification failed:', {
-        error: error.message,
-        name: error.name,
-        stack: error.stack
-      });
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid authentication token',
-        hint: error.message
+        message: 'Invalid authentication token'
       });
     }
   } catch (error) {
-    console.error('Auth middleware error:', {
-      error: error.message,
-      name: error.name,
-      stack: error.stack
-    });
-    return res.status(500).json({
-      error: 'Server Error',
-      message: 'Authentication check failed',
-      hint: error.message
-    });
+    next(error);
   }
 };
 
