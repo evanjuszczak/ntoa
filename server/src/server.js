@@ -8,7 +8,7 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://note-ai.vercel.app', 'https://ntoa.vercel.app']
+    ? ['https://note-ai.vercel.app', 'https://ntoa.vercel.app', 'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app']
     : ['http://localhost:5173', 'http://localhost:5174'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -44,11 +44,13 @@ app.use('/api', aiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Global error handler:', err);
-  res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
-    status: err.status || 500
-  });
+  const status = err.status || 500;
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal Server Error' 
+    : err.message;
+    
+  console.error(`Error ${status}: ${message}`);
+  res.status(status).json({ error: message, status });
 });
 
 export default app; 

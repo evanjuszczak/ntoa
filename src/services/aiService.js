@@ -1,30 +1,13 @@
 import { supabase } from '../config/supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT;
 
 export const processFiles = async (fileUrls) => {
   try {
-    console.log('Processing files:', fileUrls.length);
-    
-    // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      throw new Error('Failed to get session');
-    }
+    if (sessionError) throw new Error('Failed to get session');
+    if (!session?.access_token) throw new Error('No authentication token available');
 
-    if (!session?.access_token) {
-      throw new Error('No authentication token available');
-    }
-
-    // Log session info
-    console.log('Session info:', {
-      userId: session.user.id,
-      email: session.user.email,
-      expires: new Date(session.expires_at * 1000).toISOString()
-    });
-
-    // Make the request
     const response = await fetch(`${API_BASE_URL}/api/process`, {
       method: 'POST',
       headers: {
@@ -34,15 +17,8 @@ export const processFiles = async (fileUrls) => {
       body: JSON.stringify({ files: fileUrls })
     });
 
-    // Handle response
     if (!response.ok) {
       const text = await response.text();
-      console.error('Request failed:', {
-        status: response.status,
-        text: text
-      });
-
-      // Try to parse error message
       let errorMessage;
       try {
         const errorData = JSON.parse(text);
@@ -50,15 +26,12 @@ export const processFiles = async (fileUrls) => {
       } catch {
         errorMessage = text || `Request failed with status ${response.status}`;
       }
-
       throw new Error(errorMessage);
     }
 
-    // Parse and return response
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error('Process error:', error);
+    console.error('Process error:', error.message);
     throw error;
   }
 };
