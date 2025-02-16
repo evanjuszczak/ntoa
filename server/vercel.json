@@ -2,6 +2,10 @@
   "version": 2,
   "builds": [
     {
+      "src": "src/health.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "src/server.js",
       "use": "@vercel/node"
     }
@@ -9,7 +13,7 @@
   "routes": [
     {
       "src": "/health",
-      "dest": "/src/server.js"
+      "dest": "/src/health.js"
     },
     {
       "src": "/(.*)",
