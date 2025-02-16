@@ -51,26 +51,48 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: true,
     storage: window.localStorage,
     storageKey: 'supabase.auth.token',
-    debug: true
+    debug: true,
+    flowType: 'pkce'
   },
   global: {
     headers: {
       'X-Client-Info': 'supabase-js-web'
     }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    }
   }
 });
 
-// Test the client connection
-supabase.auth.onAuthStateChange((event, session) => {
+// Test the client connection and setup refresh handler
+supabase.auth.onAuthStateChange(async (event, session) => {
   console.log('Auth state change:', {
     event,
     hasSession: !!session,
     userEmail: session?.user?.email,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    sessionExpiry: session?.expires_at,
+    accessToken: session?.access_token ? 'present' : 'missing'
   });
+
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed successfully');
+  }
+
+  if (event === 'SIGNED_IN') {
+    console.log('User signed in, navigating to dashboard');
+  }
+
+  if (event === 'SIGNED_OUT') {
+    console.log('User signed out, clearing session');
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  }
 });
 
 // Initialize storage bucket if it doesn't exist

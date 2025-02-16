@@ -19,6 +19,7 @@ export class LLMService {
       const response = await openai.embeddings.create({
         model: "text-embedding-ada-002",
         input: text,
+        encoding_format: "float",
       });
 
       if (!response.data?.[0]?.embedding) {

@@ -1,120 +1,64 @@
 import { supabase } from '../config/supabaseClient';
 
-const API_BASE_URL = 'https://ntoa.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT || 'http://localhost:3000';
 
 export const processFiles = async (fileUrls) => {
   try {
-    console.log('Processing files:', fileUrls);
+    console.log('Processing files:', fileUrls.length);
     
-    // Get the current session
+    // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
-      console.error('Session error:', {
-        error: sessionError,
-        message: sessionError.message,
-        status: sessionError.status,
-        details: sessionError.details
-      });
-      throw sessionError;
+      console.error('Session error:', sessionError);
+      throw new Error('Failed to get session');
     }
 
     if (!session?.access_token) {
-      console.error('No access token in session:', {
-        hasSession: !!session,
-        sessionExpiry: session?.expires_at,
-        user: session?.user?.email
-      });
       throw new Error('No authentication token available');
     }
-    
-    console.log('Making API request with token:', {
-      tokenPrefix: session.access_token.substring(0, 10) + '...',
-      expires: session.expires_at,
-      user: session.user.email
+
+    // Log session info
+    console.log('Session info:', {
+      userId: session.user.id,
+      email: session.user.email,
+      expires: new Date(session.expires_at * 1000).toISOString()
     });
-    
+
+    // Make the request
     const response = await fetch(`${API_BASE_URL}/api/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
         'Authorization': `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ files: fileUrls }),
-      credentials: 'include'
+      body: JSON.stringify({ files: fileUrls })
     });
 
-    const responseData = await response.json().catch((error) => {
-      console.error('Error parsing response:', error);
-      return null;
-    });
-    
-    console.log('Response details:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: responseData,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
+    // Handle response
     if (!response.ok) {
-      if (response.status === 401) {
-        console.log('Attempting token refresh...');
-        // Try to refresh the session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          console.error('Session refresh failed:', {
-            error: refreshError,
-            message: refreshError.message,
-            status: refreshError.status,
-            details: refreshError.details
-          });
-          throw new Error('Authentication failed. Please log in again.');
-        }
-        
-        // Retry the request with new token
-        if (refreshData?.session) {
-          console.log('Retrying with refreshed token:', {
-            tokenPrefix: refreshData.session.access_token.substring(0, 10) + '...',
-            expires: refreshData.session.expires_at
-          });
-          
-          const retryResponse = await fetch(`${API_BASE_URL}/api/process`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`
-            },
-            body: JSON.stringify({ files: fileUrls }),
-            credentials: 'include'
-          });
-          
-          if (!retryResponse.ok) {
-            console.error('Retry failed:', {
-              status: retryResponse.status,
-              statusText: retryResponse.statusText,
-              headers: Object.fromEntries(retryResponse.headers.entries())
-            });
-            throw new Error('Failed to process files after token refresh');
-          }
-          
-          const retryData = await retryResponse.json();
-          console.log('Retry successful:', retryData);
-          return retryData;
-        }
+      const text = await response.text();
+      console.error('Request failed:', {
+        status: response.status,
+        text: text
+      });
+
+      // Try to parse error message
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData.message || errorData.error || 'Request failed';
+      } catch {
+        errorMessage = text || `Request failed with status ${response.status}`;
       }
-      
-      const errorMessage = responseData?.error?.message || responseData?.message || response.statusText;
-      throw new Error(`Server error (${response.status}): ${errorMessage}`);
+
+      throw new Error(errorMessage);
     }
 
-    return responseData;
+    // Parse and return response
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error processing files:', {
-      error: error,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Process error:', error);
     throw error;
   }
 };
@@ -238,6 +182,85 @@ export const getFileContent = async (fileUrl) => {
     return await response.blob();
   } catch (error) {
     console.error('Error fetching file content:', error);
+    throw error;
+  }
+};
+
+export const cleanupDocuments = async () => {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error('Session error:', {
+        message: sessionError.message,
+        code: sessionError.code,
+        status: sessionError.status,
+        name: sessionError.name
+      });
+      throw sessionError;
+    }
+
+    if (!session?.access_token) {
+      console.error('No access token available');
+      throw new Error('No authentication token available');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/cleanup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error('Cleanup request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        response: responseText,
+        headers: Object.fromEntries(response.headers),
+        url: response.url
+      });
+
+      if (response.status === 401) {
+        console.log('Attempting token refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw new Error('Authentication failed. Please log in again.');
+        
+        if (refreshData?.session) {
+          const retryResponse = await fetch(`${API_BASE_URL}/api/cleanup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${refreshData.session.access_token}`
+            },
+            credentials: 'include'
+          });
+          
+          if (!retryResponse.ok) {
+            throw new Error('Failed to cleanup after token refresh');
+          }
+          
+          return await retryResponse.json();
+        }
+      }
+      
+      throw new Error(`Cleanup failed: ${responseText}`);
+    }
+
+    const result = await response.json();
+    console.log('Cleanup successful:', result);
+    return result;
+  } catch (error) {
+    console.error('Cleanup error:', {
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 }; 

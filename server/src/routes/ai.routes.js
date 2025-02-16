@@ -3,7 +3,7 @@ import { processDocument, handleQuestion } from '../services/ai.service.js';
 import { supabase } from '../config/supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import { clearAllDocuments } from '../services/vectorStore.js';
-import { verifyAuth } from '../middleware/auth';
+import { verifyAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 

@@ -16,13 +16,12 @@ export const verifyAuth = async (req, res, next) => {
   try {
     // Skip auth for OPTIONS requests
     if (req.method === 'OPTIONS') {
-      return res.status(200).end();
+      return next();
     }
 
     // Skip auth in development
     if (process.env.NODE_ENV === 'development') {
       req.user = { id: 'dev-user', email: 'dev@example.com' };
-      console.log('Development mode: Using mock user');
       return next();
     }
 
@@ -50,6 +49,9 @@ export const verifyAuth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    next(error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Authentication failed'
+    });
   }
 }; 
