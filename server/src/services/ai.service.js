@@ -1,3 +1,8 @@
+const path = require('path');
+const fs = require('fs');
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
+const fetch = require('node-fetch');
 import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { addDocumentToStore, searchSimilarDocuments, deleteAllDocuments } from './vectorStore.js';
@@ -6,13 +11,8 @@ import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { CSVLoader } from 'langchain/document_loaders/fs/csv';
 import { UnstructuredLoader } from 'langchain/document_loaders/fs/unstructured';
 import { DirectoryLoader } from 'langchain/document_loaders/fs/directory';
-import mammoth from 'mammoth';
-import fetch from 'node-fetch';
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import pdf from 'pdf-parse';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -124,7 +124,7 @@ const getFileLoader = (filePath, fileType) => {
   }
 };
 
-export const processDocument = async (fileUrl, fileName) => {
+const processDocument = async (fileUrl, fileName) => {
   let tempFilePath = null;
   
   try {
@@ -207,7 +207,7 @@ export const processDocument = async (fileUrl, fileName) => {
 };
 
 // Optimize the question handling for faster response
-export const handleQuestion = async (question, chatHistory = []) => {
+const handleQuestion = async (question, chatHistory = []) => {
   try {
     // Limit to 3 most relevant documents for faster processing
     const relevantDocs = await searchSimilarDocuments(question, 3);
@@ -257,4 +257,9 @@ export const handleQuestion = async (question, chatHistory = []) => {
     console.error('Error handling question:', error);
     throw error;
   }
+};
+
+module.exports = {
+  processDocument,
+  handleQuestion
 }; 
