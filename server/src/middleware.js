@@ -5,39 +5,49 @@ export const config = {
 }
 
 export default function middleware(request) {
+  // Get the origin from the request headers
   const origin = request.headers.get('origin')
+  
+  // Define allowed origins
   const allowedOrigins = [
     'https://ntoa.vercel.app',
-    'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:5175',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5175'
+    'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app'
   ]
+
+  // Check if the origin is allowed
   const isAllowedOrigin = allowedOrigins.includes(origin)
+
+  // Set CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+    'Access-Control-Allow-Credentials': 'true',
+  }
 
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
-        'Access-Control-Max-Age': '86400',
-      },
+      headers: corsHeaders,
     })
   }
 
-  // Forward the request to the destination
-  const response = NextResponse.next()
-  
-  // Add CORS headers to all responses
-  response.headers.set('Access-Control-Allow-Origin', isAllowedOrigin ? origin : allowedOrigins[0])
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept')
-  
+  // Clone the request headers to modify them
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-middleware-next', 'true')
+
+  // Create the response
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+
+  // Add CORS headers to the response
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value)
+  })
+
   return response
 } 
