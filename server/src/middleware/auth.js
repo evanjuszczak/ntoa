@@ -14,8 +14,8 @@ const supabase = createClient(
 
 export const verifyAuth = async (req, res, next) => {
   try {
-    // Skip auth for OPTIONS requests
-    if (req.method === 'OPTIONS') {
+    // Skip auth for OPTIONS requests and health check
+    if (req.method === 'OPTIONS' || req.path === '/health') {
       return next();
     }
 
