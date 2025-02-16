@@ -3,68 +3,31 @@ import { processDocument, handleQuestion } from '../services/ai.service.js';
 import { supabase } from '../config/supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import { clearAllDocuments } from '../services/vectorStore.js';
+import { verifyAuth } from '../middleware/auth';
 
 const router = express.Router();
 
-// Middleware to verify authentication
-const verifyAuth = async (req, res, next) => {
-  try {
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-
-    // Skip auth in development
-    if (process.env.NODE_ENV === 'development') {
-      req.user = { id: 'dev-user', email: 'dev@example.com' };
-      return next();
-    }
-
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Invalid or missing authorization header'
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-
-      if (error || !user) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: error?.message || 'Invalid token'
-        });
-      }
-
-      req.user = user;
-      next();
-    } catch (error) {
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Invalid authentication token'
-      });
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Apply authentication middleware to all routes
+// Apply auth middleware to all routes
 router.use(verifyAuth);
 
-// Process uploaded files
+// Process documents
 router.post('/process', async (req, res, next) => {
   try {
     const { files } = req.body;
+    
     if (!files || !Array.isArray(files) || files.length === 0) {
       return res.status(400).json({
         error: 'Bad Request',
         message: 'No files provided'
       });
     }
+
+    // Log request info
+    console.log('Processing files:', {
+      count: files.length,
+      userId: req.user.id,
+      files: files.map(f => f.split('/').pop())
+    });
 
     // Clear existing documents before processing new ones
     await clearAllDocuments();
@@ -98,16 +61,24 @@ router.post('/process', async (req, res, next) => {
   }
 });
 
-// Handle chat messages
+// Handle questions
 router.post('/ask', async (req, res, next) => {
   try {
     const { question, chatHistory } = req.body;
+    
     if (!question) {
       return res.status(400).json({
         error: 'Bad Request',
         message: 'No question provided'
       });
     }
+
+    // Log request info
+    console.log('Question received:', {
+      userId: req.user.id,
+      question,
+      historyLength: chatHistory?.length || 0
+    });
 
     const response = await handleQuestion(question, chatHistory);
     res.json(response);
@@ -117,10 +88,10 @@ router.post('/ask', async (req, res, next) => {
   }
 });
 
-// Add cleanup endpoint
+// Cleanup documents
 router.post('/cleanup', async (req, res, next) => {
   try {
-    console.log('Cleanup requested by:', {
+    console.log('Cleanup requested:', {
       userId: req.user.id,
       email: req.user.email
     });
