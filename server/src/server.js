@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const app = express();
 
 app.get('/api/health', (req, res) => {
@@ -10,4 +10,4 @@ app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
-module.exports = app; 
+export default app; 
