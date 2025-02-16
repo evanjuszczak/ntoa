@@ -4,18 +4,9 @@
     {
       "src": "src/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "middleware.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "middlewarePath": "middleware.js",
-      "continue": true
-    },
     {
       "src": "/(.*)",
       "dest": "/src/index.js"
