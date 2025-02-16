@@ -5,8 +5,17 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
-// Simple CORS configuration
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: ['https://ntoa.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+  optionsSuccessStatus: 200
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
 // Parse JSON bodies
 app.use(express.json({ limit: '50mb' }));

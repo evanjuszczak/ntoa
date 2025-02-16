@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT;
+const API_BASE_URL = `${import.meta.env.VITE_AI_API_ENDPOINT}/api`;
 
 export const processFiles = async (fileUrls) => {
   try {
