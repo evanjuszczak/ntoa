@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -12,7 +12,7 @@ const supabase = createClient(
   }
 );
 
-const verifyAuth = async (req, res, next) => {
+export const verifyAuth = async (req, res, next) => {
   try {
     // Skip auth for OPTIONS requests
     if (req.method === 'OPTIONS') {
@@ -52,6 +52,4 @@ const verifyAuth = async (req, res, next) => {
     console.error('Auth middleware error:', error);
     next(error);
   }
-};
-
-module.exports = { verifyAuth }; 
+}; 

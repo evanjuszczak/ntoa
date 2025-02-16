@@ -279,4 +279,74 @@ export const getDocumentCount = async () => {
     console.error('Error getting document count:', error);
     throw error;
   }
+};
+
+export const clearAllDocuments = async () => {
+  try {
+    console.log('Starting document cleanup...');
+    
+    // First get the count
+    const { count, error: countError } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      console.error('Error getting document count:', {
+        error: countError.message,
+        code: countError.code,
+        hint: countError.hint
+      });
+      throw countError;
+    }
+
+    console.log(`Found ${count} documents to delete`);
+
+    // Delete all documents
+    const { error: deleteError } = await supabase
+      .from('documents')
+      .delete()
+      .neq('id', 0); // Delete all documents
+
+    if (deleteError) {
+      console.error('Error deleting documents:', {
+        error: deleteError.message,
+        code: deleteError.code,
+        hint: deleteError.hint
+      });
+      throw deleteError;
+    }
+
+    // Verify deletion
+    const { count: remainingCount, error: verifyError } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true });
+
+    if (verifyError) {
+      console.error('Error verifying deletion:', {
+        error: verifyError.message,
+        code: verifyError.code,
+        hint: verifyError.hint
+      });
+      throw verifyError;
+    }
+
+    console.log('Document cleanup complete:', {
+      deletedCount: count,
+      remainingCount: remainingCount || 0
+    });
+
+    return {
+      success: true,
+      deletedCount: count,
+      remainingCount: remainingCount || 0
+    };
+  } catch (error) {
+    console.error('Document cleanup failed:', {
+      error: error.message,
+      code: error.code,
+      hint: error.hint,
+      stack: error.stack
+    });
+    throw error;
+  }
 }; 
