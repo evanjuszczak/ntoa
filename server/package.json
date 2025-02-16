@@ -2,14 +2,13 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Backend server for Notes AI application",
-  "main": "src/index.js",
-  "type": "module",
+  "main": "src/server.js",
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "vercel-build": "echo 'Building server for Vercel'"
   },
   "keywords": [],

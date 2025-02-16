@@ -1,7 +1,7 @@
-import express from 'express';
-import cors from 'cors';
-import aiRoutes from './routes/ai.routes.js';
-import { errorHandler } from './middleware/errorHandler.js';
+const express = require('express');
+const cors = require('cors');
+const aiRoutes = require('./routes/ai.routes');
+const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -28,4 +28,12 @@ app.get('/', (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-export default app; 
+const port = process.env.PORT || 3000;
+
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+module.exports = app; 
