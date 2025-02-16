@@ -1,6 +1,8 @@
 import { supabase } from '../config/supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT;
+const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT.endsWith('/api') 
+  ? import.meta.env.VITE_AI_API_ENDPOINT
+  : `${import.meta.env.VITE_AI_API_ENDPOINT}/api`;
 
 export const processFiles = async (fileUrls) => {
   try {
@@ -8,7 +10,7 @@ export const processFiles = async (fileUrls) => {
     if (sessionError) throw new Error('Failed to get session');
     if (!session?.access_token) throw new Error('No authentication token available');
 
-    const response = await fetch(`${API_BASE_URL}/api/process`, {
+    const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

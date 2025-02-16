@@ -8,7 +8,12 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://note-ai.vercel.app', 'https://ntoa.vercel.app', 'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app']
+    ? [
+        'https://note-ai.vercel.app',
+        'https://ntoa.vercel.app',
+        'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app',
+        /\.vercel\.app$/  // Allow all vercel.app subdomains
+      ]
     : ['http://localhost:5173', 'http://localhost:5174'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
