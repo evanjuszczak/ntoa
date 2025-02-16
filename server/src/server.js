@@ -19,7 +19,7 @@ const corsOptions = {
   preflightContinue: false
 };
 
-// Apply CORS middleware
+// Apply CORS middleware first
 app.use(cors(corsOptions));
 
 // Handle preflight requests
@@ -31,21 +31,24 @@ app.use(express.json({ limit: '50mb' }));
 // Health check route (no auth required)
 app.use('/health', healthRoutes);
 
-// API routes with auth
-const router = express.Router();
-router.use(verifyAuth);
-router.use('/', aiRoutes);
-app.use('/api', router);
+// Create API router
+const apiRouter = express.Router();
+
+// Apply auth middleware only to API routes (not to OPTIONS requests)
+apiRouter.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  return verifyAuth(req, res, next);
+});
+
+// Apply routes
+apiRouter.use('/', aiRoutes);
+
+// Mount API router
+app.use('/api', apiRouter);
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  const status = err.status || 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'Internal Server Error' 
-    : err.message;
-    
-  console.error(`Error ${status}: ${message}`);
-  res.status(status).json({ error: message, status });
-});
+app.use(errorHandler);
 
 export default app; 

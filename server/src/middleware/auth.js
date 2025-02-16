@@ -14,7 +14,7 @@ const supabase = createClient(
 
 export const verifyAuth = async (req, res, next) => {
   try {
-    // Skip auth for OPTIONS requests and health check
+    // Always skip auth for OPTIONS requests and health check
     if (req.method === 'OPTIONS' || req.path === '/health') {
       return next();
     }
@@ -27,6 +27,7 @@ export const verifyAuth = async (req, res, next) => {
 
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
+      console.error('Auth failed: Missing or invalid authorization header');
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
 
@@ -34,6 +35,7 @@ export const verifyAuth = async (req, res, next) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.error('Auth failed:', error || 'No user found');
       return res.status(401).json({ error: 'Invalid authentication token' });
     }
 
@@ -41,6 +43,7 @@ export const verifyAuth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('Auth error:', error);
     res.status(500).json({ error: 'Authentication failed' });
   }
 }; 
