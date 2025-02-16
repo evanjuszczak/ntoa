@@ -15,7 +15,8 @@ export const processFiles = async (fileUrls) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`,
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ files: fileUrls })
     });
@@ -52,7 +53,8 @@ export const askQuestion = async (question, internetSearch = false) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`,
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         question,
@@ -76,7 +78,8 @@ export const askQuestion = async (question, internetSearch = false) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`
+              'Authorization': `Bearer ${refreshData.session.access_token}`,
+              'Accept': 'application/json'
             },
             body: JSON.stringify({
               question,
