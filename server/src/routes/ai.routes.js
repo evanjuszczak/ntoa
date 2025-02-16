@@ -128,18 +128,16 @@ router.post('/process', async (req, res, next) => {
       });
     }
 
-    console.log('Processing files request:', {
-      userId: req.user.id,
-      fileCount: files.length,
-      files: files.map(f => ({ url: f.substring(0, 20) + '...' }))
-    });
+    // Clear existing documents before processing new ones
+    await clearAllDocuments();
 
-    const results = await Promise.all(
-      files.map(async (fileUrl) => {
-        const fileName = fileUrl.split('/').pop();
-        return processDocument(fileUrl, fileName);
-      })
-    );
+    // Process files sequentially to avoid conflicts
+    const results = [];
+    for (const fileUrl of files) {
+      const fileName = fileUrl.split('/').pop();
+      const result = await processDocument(fileUrl, fileName);
+      results.push(result);
+    }
 
     res.json({
       success: true,
@@ -148,6 +146,16 @@ router.post('/process', async (req, res, next) => {
     });
   } catch (error) {
     console.error('Process error:', error);
+    
+    // Check for specific error types
+    if (error.message.includes('infinite loop')) {
+      return res.status(508).json({
+        error: 'Processing Error',
+        message: 'Request processing exceeded limits',
+        hint: 'Try processing fewer files at once'
+      });
+    }
+    
     next(error);
   }
 });

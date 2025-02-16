@@ -132,14 +132,8 @@ export const processDocument = async (fileUrl, fileName) => {
       fileUrl, 
       fileName, 
       tempDir,
-      env: process.env.NODE_ENV,
-      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY,
-      openaiConfigured: !!process.env.OPENAI_API_KEY
+      env: process.env.NODE_ENV
     });
-    
-    // Clean up existing documents before processing new ones
-    await deleteAllDocuments();
-    console.log('Cleared existing documents from vector store');
     
     // Clean up the file name by removing URL parameters
     const cleanFileName = fileName.split('?')[0];
@@ -155,51 +149,14 @@ export const processDocument = async (fileUrl, fileName) => {
     console.log('Downloading file...');
     const response = await fetch(fileUrl);
     if (!response.ok) {
-      console.error('Download failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
       throw new Error(`Failed to fetch file: ${response.statusText}`);
     }
     
     // Save to temp file with error handling
     tempFilePath = path.join(tempDir, `temp_${Date.now()}_${cleanFileName}`);
-    console.log('Saving to temp path:', tempFilePath);
     const buffer = await response.buffer();
+    fs.writeFileSync(tempFilePath, buffer);
     
-    try {
-      fs.writeFileSync(tempFilePath, buffer);
-      console.log('File saved successfully');
-    } catch (error) {
-      console.error('Error saving file:', {
-        error: error,
-        message: error.message,
-        code: error.code,
-        path: tempFilePath
-      });
-      throw new Error(`Failed to save temp file: ${error.message}`);
-    }
-
-    // Verify file exists and is readable
-    try {
-      const stats = fs.statSync(tempFilePath);
-      console.log('File stats:', {
-        size: stats.size,
-        path: tempFilePath,
-        exists: fs.existsSync(tempFilePath),
-        readable: fs.accessSync(tempFilePath, fs.constants.R_OK)
-      });
-    } catch (error) {
-      console.error('Error checking file:', {
-        error: error,
-        message: error.message,
-        code: error.code,
-        path: tempFilePath
-      });
-      throw new Error(`Failed to verify temp file: ${error.message}`);
-    }
-
     // Get loader and load content
     console.log('Loading document content...');
     const loader = getFileLoader(tempFilePath, fileType);
@@ -209,44 +166,19 @@ export const processDocument = async (fileUrl, fileName) => {
       throw new Error('No content could be extracted from the document');
     }
 
-    console.log('Document loaded successfully:', {
-      chunks: docs.length,
-      firstChunkLength: docs[0].pageContent.length,
-      totalLength: docs.reduce((sum, doc) => sum + doc.pageContent.length, 0)
-    });
-
-    // Split into smaller chunks and process in batches
-    console.log('Splitting document into chunks...');
+    // Split into smaller chunks
     const splitDocs = await textSplitter.splitDocuments(docs);
-    const BATCH_SIZE = 1; // Process one chunk at a time
-    
-    let processedChunks = 0;
     const totalChunks = splitDocs.length;
+    let processedChunks = 0;
 
-    // Process each chunk individually to stay within time limits
-    console.log(`Processing ${totalChunks} chunks...`);
-    for (let i = 0; i < splitDocs.length; i++) {
-      const doc = splitDocs[i];
-      try {
-        await addDocumentToStore(doc.pageContent, {
-          fileName: cleanFileName,
-          pageNumber: doc.metadata.pageNumber,
-          chunkNumber: i + 1,
-          totalChunks
-        });
-        
-        processedChunks++;
-        console.log(`Processed chunk ${processedChunks} of ${totalChunks}`);
-      } catch (error) {
-        console.error('Error processing chunk:', {
-          error: error,
-          message: error.message,
-          chunkNumber: i + 1,
-          totalChunks,
-          chunkLength: doc.pageContent.length
-        });
-        throw new Error(`Failed to process chunk ${i + 1}: ${error.message}`);
-      }
+    // Process chunks sequentially
+    for (const doc of splitDocs) {
+      await addDocumentToStore(doc.pageContent, {
+        fileName: cleanFileName,
+        pageNumber: doc.metadata.pageNumber,
+        chunkNumber: ++processedChunks,
+        totalChunks
+      });
     }
 
     return {
@@ -258,14 +190,8 @@ export const processDocument = async (fileUrl, fileName) => {
   } catch (error) {
     console.error('Error processing document:', {
       error: error.message,
-      stack: error.stack,
       fileUrl,
-      fileName,
-      tempFilePath,
-      env: process.env.NODE_ENV,
-      tempDir,
-      openaiConfigured: !!process.env.OPENAI_API_KEY,
-      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY
+      fileName
     });
     throw error;
   } finally {
@@ -273,13 +199,8 @@ export const processDocument = async (fileUrl, fileName) => {
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       try {
         fs.unlinkSync(tempFilePath);
-        console.log('Cleaned up temp file:', tempFilePath);
       } catch (error) {
-        console.error('Error cleaning up temp file:', {
-          error: error,
-          message: error.message,
-          path: tempFilePath
-        });
+        console.error('Error cleaning up temp file:', error);
       }
     }
   }
