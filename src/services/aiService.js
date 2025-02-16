@@ -40,7 +40,6 @@ export const processFiles = async (fileUrls) => {
 
 export const askQuestion = async (question, internetSearch = false) => {
   try {
-    // Get the current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
 
@@ -48,7 +47,7 @@ export const askQuestion = async (question, internetSearch = false) => {
       throw new Error('No authentication token available');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/ask`, {
+    const response = await fetch(`${API_BASE_URL}/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +73,7 @@ export const askQuestion = async (question, internetSearch = false) => {
         
         // Retry the request with new token
         if (refreshData.session) {
-          const retryResponse = await fetch(`${API_BASE_URL}/api/ask`, {
+          const retryResponse = await fetch(`${API_BASE_URL}/ask`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
