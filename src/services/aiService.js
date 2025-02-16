@@ -14,9 +14,13 @@ export const processFiles = async (fileUrls) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`,
+        'Accept': 'application/json',
+        'Origin': window.location.origin
       },
-      body: JSON.stringify({ files: fileUrls })
+      body: JSON.stringify({ files: fileUrls }),
+      credentials: 'include',
+      mode: 'cors'
     });
 
     if (!response.ok) {
@@ -52,7 +56,8 @@ export const askQuestion = async (question, internetSearch = false) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`,
+        'Origin': window.location.origin
       },
       body: JSON.stringify({
         question,
@@ -60,7 +65,8 @@ export const askQuestion = async (question, internetSearch = false) => {
         useOnlyUploadedDocs: !internetSearch,
         chatHistory: []
       }),
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
 
     const responseData = await response.json().catch(() => null);
@@ -78,7 +84,8 @@ export const askQuestion = async (question, internetSearch = false) => {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`
+              'Authorization': `Bearer ${refreshData.session.access_token}`,
+              'Origin': window.location.origin
             },
             body: JSON.stringify({
               question,
@@ -86,7 +93,8 @@ export const askQuestion = async (question, internetSearch = false) => {
               useOnlyUploadedDocs: !internetSearch,
               chatHistory: []
             }),
-            credentials: 'include'
+            credentials: 'include',
+            mode: 'cors'
           });
           
           if (!retryResponse.ok) {
@@ -183,9 +191,11 @@ export const cleanupDocuments = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`,
+        'Origin': window.location.origin
       },
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
 
     if (!response.ok) {
@@ -209,9 +219,11 @@ export const cleanupDocuments = async () => {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`
+              'Authorization': `Bearer ${refreshData.session.access_token}`,
+              'Origin': window.location.origin
             },
-            credentials: 'include'
+            credentials: 'include',
+            mode: 'cors'
           });
           
           if (!retryResponse.ok) {
