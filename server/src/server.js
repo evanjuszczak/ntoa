@@ -10,10 +10,11 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://ntoa.vercel.app']
-    : ['http://localhost:5173'],
+    ? ['https://ntoa.vercel.app', 'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app']
+    : ['http://localhost:5173', 'http://localhost:5175', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true,
   optionsSuccessStatus: 204,
   preflightContinue: false
 };
