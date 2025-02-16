@@ -13,6 +13,7 @@ export const processFiles = async (fileUrls) => {
 
     const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
@@ -51,6 +52,7 @@ export const askQuestion = async (question, internetSearch = false) => {
 
     const response = await fetch(`${API_BASE_URL}/ask`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
@@ -76,6 +78,7 @@ export const askQuestion = async (question, internetSearch = false) => {
         if (refreshData.session) {
           const retryResponse = await fetch(`${API_BASE_URL}/ask`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${refreshData.session.access_token}`,

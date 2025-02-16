@@ -5,13 +5,36 @@ export const config = {
 }
 
 export default function middleware(request) {
+  const origin = request.headers.get('origin')
+  const allowedOrigins = [
+    'https://ntoa.vercel.app',
+    'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app'
+  ]
+  const isAllowedOrigin = allowedOrigins.includes(origin)
+
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
+  // Forward the request to the destination
   const response = NextResponse.next()
   
   // Add CORS headers to all responses
-  response.headers.set('Access-Control-Allow-Origin', 'https://ntoa.vercel.app')
+  response.headers.set('Access-Control-Allow-Origin', isAllowedOrigin ? origin : allowedOrigins[0])
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept')
   response.headers.set('Access-Control-Allow-Credentials', 'true')
+  response.headers.set('Access-Control-Max-Age', '86400')
   
   return response
 } 
