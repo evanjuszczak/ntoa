@@ -37,7 +37,10 @@ app.get('/health', (req, res) => {
 });
 
 // API routes with auth
-app.use('/api', verifyAuth, aiRoutes);
+const router = express.Router();
+router.use(verifyAuth);
+router.use('/', aiRoutes);
+app.use('/api', router);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
