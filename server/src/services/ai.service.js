@@ -133,7 +133,8 @@ export const processDocument = async (fileUrl, fileName) => {
       fileName, 
       tempDir,
       env: process.env.NODE_ENV,
-      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY
+      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY,
+      openaiConfigured: !!process.env.OPENAI_API_KEY
     });
     
     // Clean up existing documents before processing new ones
@@ -154,7 +155,11 @@ export const processDocument = async (fileUrl, fileName) => {
     console.log('Downloading file...');
     const response = await fetch(fileUrl);
     if (!response.ok) {
-      console.error('Download failed:', response.status, response.statusText);
+      console.error('Download failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       throw new Error(`Failed to fetch file: ${response.statusText}`);
     }
     
@@ -167,7 +172,12 @@ export const processDocument = async (fileUrl, fileName) => {
       fs.writeFileSync(tempFilePath, buffer);
       console.log('File saved successfully');
     } catch (error) {
-      console.error('Error saving file:', error);
+      console.error('Error saving file:', {
+        error: error,
+        message: error.message,
+        code: error.code,
+        path: tempFilePath
+      });
       throw new Error(`Failed to save temp file: ${error.message}`);
     }
 
@@ -177,10 +187,16 @@ export const processDocument = async (fileUrl, fileName) => {
       console.log('File stats:', {
         size: stats.size,
         path: tempFilePath,
-        exists: fs.existsSync(tempFilePath)
+        exists: fs.existsSync(tempFilePath),
+        readable: fs.accessSync(tempFilePath, fs.constants.R_OK)
       });
     } catch (error) {
-      console.error('Error checking file:', error);
+      console.error('Error checking file:', {
+        error: error,
+        message: error.message,
+        code: error.code,
+        path: tempFilePath
+      });
       throw new Error(`Failed to verify temp file: ${error.message}`);
     }
 
@@ -195,7 +211,8 @@ export const processDocument = async (fileUrl, fileName) => {
 
     console.log('Document loaded successfully:', {
       chunks: docs.length,
-      firstChunkLength: docs[0].pageContent.length
+      firstChunkLength: docs[0].pageContent.length,
+      totalLength: docs.reduce((sum, doc) => sum + doc.pageContent.length, 0)
     });
 
     // Split into smaller chunks and process in batches
@@ -210,15 +227,26 @@ export const processDocument = async (fileUrl, fileName) => {
     console.log(`Processing ${totalChunks} chunks...`);
     for (let i = 0; i < splitDocs.length; i++) {
       const doc = splitDocs[i];
-      await addDocumentToStore(doc.pageContent, {
-        fileName: cleanFileName,
-        pageNumber: doc.metadata.pageNumber,
-        chunkNumber: i + 1,
-        totalChunks
-      });
-      
-      processedChunks++;
-      console.log(`Processed chunk ${processedChunks} of ${totalChunks}`);
+      try {
+        await addDocumentToStore(doc.pageContent, {
+          fileName: cleanFileName,
+          pageNumber: doc.metadata.pageNumber,
+          chunkNumber: i + 1,
+          totalChunks
+        });
+        
+        processedChunks++;
+        console.log(`Processed chunk ${processedChunks} of ${totalChunks}`);
+      } catch (error) {
+        console.error('Error processing chunk:', {
+          error: error,
+          message: error.message,
+          chunkNumber: i + 1,
+          totalChunks,
+          chunkLength: doc.pageContent.length
+        });
+        throw new Error(`Failed to process chunk ${i + 1}: ${error.message}`);
+      }
     }
 
     return {
@@ -235,7 +263,9 @@ export const processDocument = async (fileUrl, fileName) => {
       fileName,
       tempFilePath,
       env: process.env.NODE_ENV,
-      tempDir
+      tempDir,
+      openaiConfigured: !!process.env.OPENAI_API_KEY,
+      supabaseConfigured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_KEY
     });
     throw error;
   } finally {
@@ -245,7 +275,11 @@ export const processDocument = async (fileUrl, fileName) => {
         fs.unlinkSync(tempFilePath);
         console.log('Cleaned up temp file:', tempFilePath);
       } catch (error) {
-        console.error('Error cleaning up temp file:', error);
+        console.error('Error cleaning up temp file:', {
+          error: error,
+          message: error.message,
+          path: tempFilePath
+        });
       }
     }
   }
