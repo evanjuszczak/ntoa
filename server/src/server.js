@@ -1,40 +1,31 @@
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
+import aiRoutes from './routes/ai.routes.js';
 
 const app = express();
 
-// Basic middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'ok',
     timestamp: new Date().toISOString()
   });
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ message: 'API is running' });
-});
+// API routes
+app.use('/api', aiRoutes);
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
-    error: 'Server Error',
-    message: 'An unexpected error occurred'
+    error: 'Internal Server Error',
+    message: err.message
   });
 });
 
-// Start server if running directly
-if (require.main === module) {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-}
-
-module.exports = app; 
+export default app; 

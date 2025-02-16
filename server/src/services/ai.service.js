@@ -1,8 +1,8 @@
-const path = require('path');
-const fs = require('fs');
-const pdf = require('pdf-parse');
-const mammoth = require('mammoth');
-const fetch = require('node-fetch');
+import path from 'path';
+import fs from 'fs';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
+import fetch from 'node-fetch';
 import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { addDocumentToStore, searchSimilarDocuments, deleteAllDocuments } from './vectorStore.js';
@@ -259,7 +259,7 @@ const handleQuestion = async (question, chatHistory = []) => {
   }
 };
 
-module.exports = {
+export {
   processDocument,
   handleQuestion
 }; 
