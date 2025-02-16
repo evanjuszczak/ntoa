@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import aiRoutes from './routes/ai.routes.js';
+import { verifyAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -35,8 +36,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api', aiRoutes);
+// API routes with auth
+app.use('/api', verifyAuth, aiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
