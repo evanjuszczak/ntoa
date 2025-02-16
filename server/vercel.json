@@ -8,7 +8,7 @@
   ],
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "https://ntoa.vercel.app" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
@@ -22,7 +22,15 @@
     {
       "src": "/api/(.*)",
       "methods": ["OPTIONS"],
-      "status": 204
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ntoa.vercel.app",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400"
+      },
+      "status": 204,
+      "continue": true
     },
     {
       "src": "/(.*)",

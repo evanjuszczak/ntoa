@@ -35,11 +35,19 @@ const corsOptions = {
   maxAge: 86400
 };
 
-// Apply CORS middleware first
-app.use(cors(corsOptions));
+// Handle OPTIONS requests first
+app.options('*', (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://ntoa.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(204).end();
+});
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Apply CORS middleware for non-OPTIONS requests
+app.use(cors(corsOptions));
 
 // Parse JSON bodies
 app.use(express.json({ limit: '50mb' }));
@@ -50,7 +58,7 @@ app.use('/health', healthRoutes);
 // Create API router
 const apiRouter = express.Router();
 
-// Apply auth middleware only to API routes (not to OPTIONS requests)
+// Apply auth middleware only to non-OPTIONS requests
 apiRouter.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     return next();
