@@ -17,18 +17,11 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/api', aiRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'production'
-  });
+  res.json({ status: 'ok' });
 });
 
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Note AI API is running',
-    version: '1.0.0'
-  });
+  res.json({ message: 'API is running' });
 });
 
 // Error handling
