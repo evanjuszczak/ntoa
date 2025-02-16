@@ -9,14 +9,30 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://ntoa.vercel.app', 'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app']
-    : ['http://localhost:5173', 'http://localhost:5175', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'https://ntoa.vercel.app',
+      'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5175',
+      'http://localhost:3000'
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true,
   optionsSuccessStatus: 204,
-  preflightContinue: false
+  preflightContinue: false,
+  maxAge: 86400
 };
 
 // Apply CORS middleware first
