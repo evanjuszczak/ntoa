@@ -1,8 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT.endsWith('/api') 
-  ? import.meta.env.VITE_AI_API_ENDPOINT
-  : `${import.meta.env.VITE_AI_API_ENDPOINT}/api`;
+const API_BASE_URL = import.meta.env.VITE_AI_API_ENDPOINT;
 
 export const processFiles = async (fileUrls) => {
   try {
@@ -14,13 +12,9 @@ export const processFiles = async (fileUrls) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'Accept': 'application/json',
-        'Origin': window.location.origin
+        'Authorization': `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ files: fileUrls }),
-      credentials: 'include',
-      mode: 'cors'
+      body: JSON.stringify({ files: fileUrls })
     });
 
     if (!response.ok) {
@@ -55,18 +49,14 @@ export const askQuestion = async (question, internetSearch = false) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'Origin': window.location.origin
+        'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({
         question,
         internetSearch,
         useOnlyUploadedDocs: !internetSearch,
         chatHistory: []
-      }),
-      credentials: 'include',
-      mode: 'cors'
+      })
     });
 
     const responseData = await response.json().catch(() => null);
@@ -83,18 +73,14 @@ export const askQuestion = async (question, internetSearch = false) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`,
-              'Origin': window.location.origin
+              'Authorization': `Bearer ${refreshData.session.access_token}`
             },
             body: JSON.stringify({
               question,
               internetSearch,
               useOnlyUploadedDocs: !internetSearch,
               chatHistory: []
-            }),
-            credentials: 'include',
-            mode: 'cors'
+            })
           });
           
           if (!retryResponse.ok) {
@@ -121,7 +107,6 @@ export const askQuestion = async (question, internetSearch = false) => {
 
 export const getFileContent = async (fileUrl) => {
   try {
-    // Get the current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
 
@@ -132,23 +117,19 @@ export const getFileContent = async (fileUrl) => {
     const response = await fetch(fileUrl, {
       headers: {
         'Authorization': `Bearer ${session.access_token}`
-      },
-      credentials: 'include'
+      }
     });
     
     if (!response.ok) {
       if (response.status === 401) {
-        // Try to refresh the session
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) throw new Error('Authentication failed. Please log in again.');
         
-        // Retry the request with new token
         if (refreshData.session) {
           const retryResponse = await fetch(fileUrl, {
             headers: {
               'Authorization': `Bearer ${refreshData.session.access_token}`
-            },
-            credentials: 'include'
+            }
           });
           
           if (!retryResponse.ok) {
@@ -171,31 +152,18 @@ export const getFileContent = async (fileUrl) => {
 export const cleanupDocuments = async () => {
   try {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error('Session error:', {
-        message: sessionError.message,
-        code: sessionError.code,
-        status: sessionError.status,
-        name: sessionError.name
-      });
-      throw sessionError;
-    }
+    if (sessionError) throw sessionError;
 
     if (!session?.access_token) {
-      console.error('No access token available');
       throw new Error('No authentication token available');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/cleanup`, {
+    const response = await fetch(`${API_BASE_URL}/cleanup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'Origin': window.location.origin
-      },
-      credentials: 'include',
-      mode: 'cors'
+        'Authorization': `Bearer ${session.access_token}`
+      }
     });
 
     if (!response.ok) {
@@ -203,27 +171,20 @@ export const cleanupDocuments = async () => {
       console.error('Cleanup request failed:', {
         status: response.status,
         statusText: response.statusText,
-        response: responseText,
-        headers: Object.fromEntries(response.headers),
-        url: response.url
+        response: responseText
       });
 
       if (response.status === 401) {
-        console.log('Attempting token refresh...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) throw new Error('Authentication failed. Please log in again.');
         
         if (refreshData?.session) {
-          const retryResponse = await fetch(`${API_BASE_URL}/api/cleanup`, {
+          const retryResponse = await fetch(`${API_BASE_URL}/cleanup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${refreshData.session.access_token}`,
-              'Origin': window.location.origin
-            },
-            credentials: 'include',
-            mode: 'cors'
+              'Authorization': `Bearer ${refreshData.session.access_token}`
+            }
           });
           
           if (!retryResponse.ok) {
@@ -241,12 +202,7 @@ export const cleanupDocuments = async () => {
     console.log('Cleanup successful:', result);
     return result;
   } catch (error) {
-    console.error('Cleanup error:', {
-      message: error.message,
-      cause: error.cause,
-      stack: error.stack,
-      name: error.name
-    });
+    console.error('Cleanup error:', error);
     throw error;
   }
 }; 

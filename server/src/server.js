@@ -5,30 +5,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://note-ai.vercel.app',
-        'https://ntoa.vercel.app',
-        'https://ntoa-5diyil6s2-evans-projects-6bc84f56.vercel.app',
-        /\.vercel\.app$/  // Allow all vercel.app subdomains
-      ]
-    : ['http://localhost:5173', 'http://localhost:5174'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  credentials: true,
-  optionsSuccessStatus: 204,
-  maxAge: 86400, // 24 hours
-  preflightContinue: false
-};
-
-// Apply CORS middleware first
-app.use(cors(corsOptions));
-
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
+// Simple CORS configuration
+app.use(cors());
 
 // Parse JSON bodies
 app.use(express.json({ limit: '50mb' }));
@@ -38,11 +16,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    cors: {
-      origin: corsOptions.origin,
-      methods: corsOptions.methods
-    }
+    env: process.env.NODE_ENV
   });
 });
 
