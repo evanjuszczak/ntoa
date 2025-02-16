@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import aiRoutes from './routes/ai.routes.js';
+import healthRoutes from './routes/health.routes.js';
 import { verifyAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -26,15 +27,8 @@ app.options('*', cors(corsOptions));
 // Parse JSON bodies
 app.use(express.json({ limit: '50mb' }));
 
-// Health check endpoint (no auth required)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    cors: corsOptions
-  });
-});
+// Health check route (no auth required)
+app.use('/health', healthRoutes);
 
 // API routes with auth
 const router = express.Router();
